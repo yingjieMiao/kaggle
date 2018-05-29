@@ -1,8 +1,14 @@
 import functools
+import os
 import pandas as pd
 import tensorflow as tf
 from tensorflow.core.example import example_pb2
 from tensorflow.core.example import feature_pb2
+
+flags = tf.app.flags
+flags.DEFINE_string("base_dir", "",
+                    "Main directory that contains train.json, test.json, etc")
+FLAGS = flags.FLAGS
 
 BATCH_SIZE = 100
 TRAIN_STEPS = 2000
@@ -10,7 +16,7 @@ TRAIN_TEST_SPLIT = 0.95
 
 def load_data():
   # Load raw data
-  JSON_NAME = '/Users/yingjie/Kaggle.Data/what.is.cooking/train.json'
+  JSON_NAME = os.path.join(FLAGS.base_dir, 'train.json')
   data = pd.read_json(JSON_NAME, orient='records');
   data = data.sample(frac=1).reset_index(drop=True)  
     
@@ -69,11 +75,11 @@ def make_predictions(classifier, feature_columns, label_voc, test_x):
   return [label_voc[pred['class_ids'][0]] for pred in predicts]
 
 def generate_submissions(model_fn):
-  data = pd.read_json('/Users/yingjie/Kaggle.Data/what.is.cooking/test.json', orient='records')
+  data = pd.read_json(os.path.join(FLAGS.base_dir, 'test.json'), orient='records')
   feats = to_serialized_features(data['ingredients'].values)
   predictions = model_fn(feats)
   data['cuisine'] = predictions
-  data.to_csv('/Users/yingjie/Kaggle.Data/what.is.cooking/my_submissions.csv',
+  data.to_csv(os.path.join(FLAGS.base_dir, 'my_submissions.csv'),
               columns=['id', 'cuisine'], index=False)
 
 def main(argv):
@@ -102,8 +108,7 @@ def main(argv):
   eval_result = classifier.evaluate(
       input_fn=lambda:eval_input_fn(test_x, [i_column], test_y, BATCH_SIZE))
   
-  print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))  
-  
+  print('\nTest set accuracy: {accuracy:0.3f}\n'.format(**eval_result))
   print('sample predictions:\n');
   predicts = make_predictions(classifier, [i_column], label_voc, test_x[:10])
   for pred, expect in zip(predicts, test_y[:10]):
@@ -115,4 +120,3 @@ def main(argv):
 if __name__ == '__main__':
     tf.logging.set_verbosity(tf.logging.INFO)
     tf.app.run(main)
-
