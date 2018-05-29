@@ -12,7 +12,7 @@ FLAGS = flags.FLAGS
 
 BATCH_SIZE = 100
 TRAIN_STEPS = 2000
-TRAIN_TEST_SPLIT = 0.95
+TRAIN_TEST_SPLIT = 0.80
 
 def load_data():
   # Load raw data
